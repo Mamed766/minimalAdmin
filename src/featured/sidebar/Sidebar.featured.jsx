@@ -53,6 +53,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               >
                 Create
               </Link>
+              <Link to={"/job-edit"} className="p-2 rounded hover:bg-gray-100">
+                Edit
+              </Link>
             </ul>
           </div>
         )}

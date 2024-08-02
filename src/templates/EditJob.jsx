@@ -1,17 +1,25 @@
-import React from "react";
-import { useMutation, useQueryClient } from "react-query";
-import { postData } from "../services/api";
-import { useNavigate } from "react-router";
+import React, { useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "react-query";
+import { fetchDataById, updateData } from "../services/api";
+import { useNavigate, useParams } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 
-const CreateJob = () => {
+const EditJob = () => {
+  const { id } = useParams();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const mutation = useMutation((newJob) => postData(newJob), {
+  const {
+    data: job,
+    isLoading,
+    error,
+  } = useQuery(["job", id], () => fetchDataById(id));
+
+  const mutation = useMutation((updatedJob) => updateData(id, updatedJob), {
     onSuccess: () => {
       queryClient.invalidateQueries("jobs");
+      navigate("/");
     },
   });
 
@@ -37,11 +45,25 @@ const CreateJob = () => {
       cash: Yup.string().required("Required"),
     }),
     onSubmit: (values) => {
-      const data = { ...values };
-      mutation.mutate(data);
-      navigate("/");
+      mutation.mutate(values);
     },
+    enableReinitialize: true,
   });
+
+  useEffect(() => {
+    if (job) {
+      formik.setValues({
+        jobtitle: job.jobtitle || "",
+        file: job.file || null,
+        time: job.time || "",
+        experience: job.experience || "",
+        profession: job.profession || "",
+        postedDate: job.postedDate || "",
+        candidates: job.candidates || "",
+        cash: job.cash || "",
+      });
+    }
+  }, [job]);
 
   const handleFileChange = (e) => {
     const file = e.currentTarget.files[0];
@@ -52,16 +74,19 @@ const CreateJob = () => {
     reader.readAsDataURL(file);
   };
 
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error fetching data: {error.message}</div>;
+
   return (
     <div>
       <div className="flex gap-2 flex-col">
-        <h3>Create a new job</h3>
+        <h3>Edit job</h3>
         <div className="flex items-center gap-2">
           <p className="hover:underline">Dashboard</p>
           <div className="h-1 w-1 bg-gray-500 rounded-full"></div>
           <p className="hover:underline">Job</p>
           <div className="h-1 w-1 bg-gray-500 rounded-full"></div>
-          <p className="text-gray-400">New job</p>
+          <p className="text-gray-400">Edit job</p>
         </div>
       </div>
       <div className="max-w-[1000px] m-auto mt-5 rounded-lg shadow-lg p-2">
@@ -229,7 +254,7 @@ const CreateJob = () => {
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
                 value={formik.values.cash}
-                placeholder="Ex: 100$"
+                placeholder="Ex: Negotiable"
               />
             </div>
             {formik.touched.cash && formik.errors.cash ? (
@@ -239,7 +264,7 @@ const CreateJob = () => {
               type="submit"
               className="bg-black text-white p-2 rounded mt-2"
             >
-              Create
+              Update
             </button>
           </div>
         </form>
@@ -248,4 +273,4 @@ const CreateJob = () => {
   );
 };
 
-export default CreateJob;
+export default EditJob;

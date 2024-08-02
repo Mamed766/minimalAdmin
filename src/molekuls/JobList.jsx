@@ -1,17 +1,52 @@
-import React from "react";
-import { FaDotCircle, FaPlus, FaSearch } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import { FaPlus, FaSearch } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { MdPeopleAlt } from "react-icons/md";
 import { PiCellSignalFull } from "react-icons/pi";
 import { FaClock } from "react-icons/fa";
 import { GrMoney } from "react-icons/gr";
 import { IoPerson } from "react-icons/io5";
+import { useQuery } from "react-query";
+import { fetchData } from "../services/api";
+import Modal from "./Modal";
 
 const JobList = () => {
+  const [openMenu, setOpenMenu] = useState(null);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const navigate = useNavigate();
+
+  const {
+    data: jobs,
+    error,
+    isLoading,
+  } = useQuery({
+    queryKey: ["jobs"],
+    queryFn: fetchData,
+  });
+
+  const handleMenuToggle = (index) => {
+    setOpenMenu(openMenu === index ? null : index);
+  };
+
+  const handleEdit = (id) => {
+    navigate(`/job-edit/${id}`);
+  };
+
+  const handleView = (job) => {
+    setSelectedJob(job);
+  };
+
+  const closeModal = () => {
+    setSelectedJob(null);
+  };
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error fetching data</div>;
+
   return (
     <div className="max-w-[1240px] m-auto">
-      <div className="flex justify-between items-center  p-2">
+      <div className="flex justify-between items-center p-2">
         <div className="flex flex-col gap-3">
           <h2 className="text-[25px] font-bold">List</h2>
           <div className=" flex items-center gap-3">
@@ -19,7 +54,6 @@ const JobList = () => {
             <div className="h-1 w-1 bg-gray-500 rounded-full"></div>
             <p className="hover:underline">Job</p>
             <div className="h-1 w-1 bg-gray-500 rounded-full"></div>
-
             <p className=" text-gray-400">List</p>
           </div>
         </div>
@@ -32,7 +66,7 @@ const JobList = () => {
         </Link>
       </div>
       <div>
-        <div className="flex items-center  justify-between ">
+        <div className="flex items-center justify-between">
           <div className="flex items-center mt-5 gap-2 border border-gray-200 w-[250px] p-3 rounded-lg">
             <FaSearch className="text-gray-400" />
             <input
@@ -42,8 +76,8 @@ const JobList = () => {
             />
           </div>
           <div>
-            <div className="flex gap-2 mt-5 rounded-full ">
-              <div className="hover:bg-gray-100  transition-all  duration-300 rounded-full ease-in-out p-2">
+            <div className="flex gap-2 mt-5 rounded-full">
+              <div className="hover:bg-gray-100 transition-all duration-300 rounded-full ease-in-out p-2">
                 <button className="flex gap-1">
                   Filters
                   <div className="flex flex-col gap-1 items-center mt-[7px]">
@@ -53,12 +87,10 @@ const JobList = () => {
                   </div>
                 </button>
               </div>
-
-              <div className="flex relative items-center hover:bg-gray-100 cursor-pointer  transition-all  duration-300 rounded-full ease-in-out p-2 ">
+              <div className="flex relative items-center hover:bg-gray-100 cursor-pointer transition-all duration-300 rounded-full ease-in-out p-2">
                 <p>Sort by:</p>
-
                 <select className="bg-transparent outline-none" name="" id="">
-                  <option className="bg-white  w-[300px]  p-2" value="Latest">
+                  <option className="bg-white w-[300px] p-2" value="Latest">
                     Latest
                   </option>
                   <option value="Popular">Popular</option>
@@ -69,54 +101,80 @@ const JobList = () => {
           </div>
         </div>
       </div>
-      <div className="mt-4">
-        <div className="w-[20rem]  bg-white shadow-lg rounded-lg p-4">
-          <div className="flex flex-col h-[12rem] justify-between">
-            <div>
-              <div className="flex justify-between">
-                <img
-                  className="w-10 rounded-lg"
-                  src="https://pub-c5e31b5cdafb419fb247a8ac2e78df7a.r2.dev/mock/assets/images/company/company-1.webp"
-                  alt=""
-                />
-                <BsThreeDotsVertical className="text-[20px] cursor-pointer" />
-              </div>
-              <div className="flex flex-col gap-1 mt-2">
-                <h3>Software Engineer</h3>
-                <p className="text-gray-400 text-[12px]">
-                  Posted date: 02 Aug 2024
-                </p>
-                <p className="flex items-center gap-1 text-[12px] text-green-600">
-                  <MdPeopleAlt /> 12 candidates
-                </p>
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {jobs &&
+          jobs.map((job, index) => (
+            <div
+              key={index}
+              className="w-full bg-white shadow-lg rounded-lg p-4 relative"
+            >
+              <div className="flex flex-col h-full justify-between">
+                <div>
+                  <div className="flex justify-between">
+                    <img className="w-10 rounded-lg" src={job.file} alt="" />
+                    <BsThreeDotsVertical
+                      className="text-[20px] cursor-pointer"
+                      onClick={() => handleMenuToggle(index)}
+                    />
+                  </div>
+                  {openMenu === index && (
+                    <div className="absolute top-10 right-0 bg-white shadow-md rounded-lg p-2">
+                      <ul className="flex flex-col">
+                        <li
+                          className="cursor-pointer hover:bg-gray-100 p-2"
+                          onClick={() => handleEdit(job.id)}
+                        >
+                          Edit
+                        </li>
+                        <li
+                          className="cursor-pointer hover:bg-gray-100 p-2"
+                          onClick={() => handleView(job)}
+                        >
+                          View
+                        </li>
+                        <li className="cursor-pointer hover:bg-gray-100 p-2">
+                          Delete
+                        </li>
+                      </ul>
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-1 mt-2">
+                    <h3>{job.jobtitle}</h3>
+                    <p className="text-gray-400 text-[12px]">
+                      Posted date: {job.postedDate}
+                    </p>
+                    <p className="flex items-center gap-1 text-[12px] text-green-600">
+                      <MdPeopleAlt /> {job.candidates} candidates
+                    </p>
+                  </div>
+                </div>
+                <div className="border-t-[1px] pt-2 border-t-gray">
+                  <div className="flex text-gray-400 justify-between">
+                    <p className="flex items-center gap-1 text-[12px]">
+                      <PiCellSignalFull />
+                      {job.experience}
+                    </p>
+                    <p className="flex items-center text-[12px] gap-1">
+                      <FaClock />
+                      {job.time}
+                    </p>
+                  </div>
+                  <div className="flex text-gray-400 justify-between">
+                    <p className="flex gap-1 items-center text-[12px]">
+                      <GrMoney />
+                      {job.cash}
+                    </p>
+                    <p className="flex items-center text-[12px] gap-1">
+                      <IoPerson />
+                      {job.profession}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
-
-            <div className="border-t-[1px] pt-2 border-t-gray">
-              <div className="flex text-gray-400 justify-between">
-                <p className="flex items-center gap-1 text-[12px]">
-                  <PiCellSignalFull />
-                  No Experience
-                </p>
-                <p className="flex items-center  text-[12px] gap-1">
-                  <FaClock />
-                  Full-time
-                </p>
-              </div>
-              <div className="flex text-gray-400 justify-between">
-                <p className="flex gap-1 items-center text-[12px]">
-                  <GrMoney />
-                  Negotiable
-                </p>
-                <p className="flex items-center  text-[12px] gap-1">
-                  <IoPerson />
-                  CEO
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+          ))}
       </div>
+      <Modal isOpen={!!selectedJob} onClose={closeModal} job={selectedJob} />
     </div>
   );
 };
