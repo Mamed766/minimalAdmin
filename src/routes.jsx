@@ -4,7 +4,7 @@ import CreateJob from "./templates/CreateJob";
 export const routers = [
   {
     id: 1,
-    path: "/job-list",
+    path: "/",
     element: <JobList />,
   },
   {
