@@ -235,6 +235,7 @@ const CreateJob = () => {
             {formik.touched.cash && formik.errors.cash ? (
               <div className="text-red-600">{formik.errors.cash}</div>
             ) : null}
+
             <button
               type="submit"
               className="bg-black text-white p-2 rounded mt-2"

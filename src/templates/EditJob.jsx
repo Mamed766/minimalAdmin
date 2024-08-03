@@ -33,6 +33,7 @@ const EditJob = () => {
       postedDate: "",
       candidates: "",
       cash: "",
+      filter: "",
     },
     validationSchema: Yup.object({
       jobtitle: Yup.string().required("Required"),
@@ -260,6 +261,7 @@ const EditJob = () => {
             {formik.touched.cash && formik.errors.cash ? (
               <div className="text-red-600">{formik.errors.cash}</div>
             ) : null}
+
             <button
               type="submit"
               className="bg-black text-white p-2 rounded mt-2"

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useDeferredValue } from "react";
 import { FaPlus, FaSearch } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { BsThreeDotsVertical } from "react-icons/bs";
@@ -14,6 +14,9 @@ import Modal from "./Modal";
 const JobList = () => {
   const [openMenu, setOpenMenu] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filter, setFilter] = useState("Latest");
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const navigate = useNavigate();
 
   const {
@@ -40,6 +43,25 @@ const JobList = () => {
   const closeModal = () => {
     setSelectedJob(null);
   };
+
+  const handleFilterChange = (event) => {
+    setFilter(event.target.value);
+  };
+
+  const filteredJobs = jobs
+    ?.filter((job) =>
+      job.jobtitle.toLowerCase().includes(deferredSearchQuery.toLowerCase())
+    )
+    ?.sort((a, b) => {
+      if (filter === "Latest") {
+        return new Date(b.postedDate) - new Date(a.postedDate);
+      } else if (filter === "Popular") {
+        return b.candidates - a.candidates;
+      } else if (filter === "Oldest") {
+        return new Date(a.postedDate) - new Date(b.postedDate);
+      }
+      return 0;
+    });
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error fetching data</div>;
@@ -73,6 +95,8 @@ const JobList = () => {
               type="search"
               className="outline-none"
               placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <div>
@@ -89,7 +113,11 @@ const JobList = () => {
               </div>
               <div className="flex relative items-center hover:bg-gray-100 cursor-pointer transition-all duration-300 rounded-full ease-in-out p-2">
                 <p>Sort by:</p>
-                <select className="bg-transparent outline-none" name="" id="">
+                <select
+                  className="bg-transparent outline-none"
+                  value={filter}
+                  onChange={handleFilterChange}
+                >
                   <option className="bg-white w-[300px] p-2" value="Latest">
                     Latest
                   </option>
@@ -102,8 +130,8 @@ const JobList = () => {
         </div>
       </div>
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {jobs &&
-          jobs.map((job, index) => (
+        {filteredJobs &&
+          filteredJobs.map((job, index) => (
             <div
               key={index}
               className="w-full bg-white shadow-lg rounded-lg p-4 relative"
