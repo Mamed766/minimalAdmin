@@ -1,5 +1,10 @@
 import React, { useState, useDeferredValue } from "react";
-import { FaPlus, FaSearch } from "react-icons/fa";
+import {
+  FaPlus,
+  FaSearch,
+  FaChevronLeft,
+  FaChevronRight,
+} from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { MdPeopleAlt } from "react-icons/md";
@@ -7,8 +12,8 @@ import { PiCellSignalFull } from "react-icons/pi";
 import { FaClock } from "react-icons/fa";
 import { GrMoney } from "react-icons/gr";
 import { IoPerson } from "react-icons/io5";
-import { useQuery } from "react-query";
-import { fetchData } from "../services/api";
+import { useQuery, useMutation, useQueryClient } from "react-query";
+import { fetchData, deleteData } from "../services/api";
 import Modal from "./Modal";
 
 const JobList = () => {
@@ -16,16 +21,25 @@ const JobList = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("Latest");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const {
-    data: jobs,
+    data: jobs = [],
     error,
     isLoading,
   } = useQuery({
     queryKey: ["jobs"],
     queryFn: fetchData,
+  });
+
+  const deleteMutation = useMutation(deleteData, {
+    onSuccess: () => {
+      queryClient.invalidateQueries("jobs");
+    },
   });
 
   const handleMenuToggle = (index) => {
@@ -46,6 +60,16 @@ const JobList = () => {
 
   const handleFilterChange = (event) => {
     setFilter(event.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleDelete = (id) => {
+    deleteMutation.mutate(id);
   };
 
   const filteredJobs = jobs
@@ -63,6 +87,16 @@ const JobList = () => {
       return 0;
     });
 
+  const totalPages = Math.ceil((filteredJobs?.length || 0) / itemsPerPage);
+  const indexOfLastJob = currentPage * itemsPerPage;
+  const indexOfFirstJob = indexOfLastJob - itemsPerPage;
+  const currentJobs =
+    filteredJobs?.slice(indexOfFirstJob, indexOfLastJob) || [];
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error fetching data</div>;
 
@@ -71,12 +105,12 @@ const JobList = () => {
       <div className="flex justify-between items-center p-2">
         <div className="flex flex-col gap-3">
           <h2 className="text-[25px] font-bold">List</h2>
-          <div className=" flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <p className="hover:underline">Dashboard</p>
             <div className="h-1 w-1 bg-gray-500 rounded-full"></div>
             <p className="hover:underline">Job</p>
             <div className="h-1 w-1 bg-gray-500 rounded-full"></div>
-            <p className=" text-gray-400">List</p>
+            <p className="text-gray-400">List</p>
           </div>
         </div>
 
@@ -96,7 +130,7 @@ const JobList = () => {
               className="outline-none"
               placeholder="Search..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
             />
           </div>
           <div>
@@ -130,8 +164,8 @@ const JobList = () => {
         </div>
       </div>
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {filteredJobs &&
-          filteredJobs.map((job, index) => (
+        {currentJobs &&
+          currentJobs.map((job, index) => (
             <div
               key={index}
               className="w-full bg-white shadow-lg rounded-lg p-4 relative"
@@ -160,7 +194,10 @@ const JobList = () => {
                         >
                           View
                         </li>
-                        <li className="cursor-pointer hover:bg-gray-100 p-2">
+                        <li
+                          className="cursor-pointer hover:bg-gray-100 p-2"
+                          onClick={() => handleDelete(job.id)}
+                        >
                           Delete
                         </li>
                       </ul>
@@ -203,6 +240,41 @@ const JobList = () => {
           ))}
       </div>
       <Modal isOpen={!!selectedJob} onClose={closeModal} job={selectedJob} />
+      <div className="flex justify-center mt-4">
+        <button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="px-3 py-1 mx-1 rounded bg-transparent"
+        >
+          <FaChevronLeft
+            className={`cursor-pointer ${
+              currentPage === 1 ? "text-gray-400" : "text-black"
+            }`}
+          />
+        </button>
+        {Array.from({ length: totalPages }, (_, index) => (
+          <button
+            key={index}
+            onClick={() => handlePageChange(index + 1)}
+            className={`px-3 py-1 mx-1 rounded-full ${
+              currentPage === index + 1 ? "bg-black text-white" : "bg-gray-200"
+            }`}
+          >
+            {index + 1}
+          </button>
+        ))}
+        <button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="px-3 py-1 mx-1 rounded bg-transparent"
+        >
+          <FaChevronRight
+            className={`cursor-pointer ${
+              currentPage === totalPages ? "text-gray-400" : "text-black"
+            }`}
+          />
+        </button>
+      </div>
     </div>
   );
 };

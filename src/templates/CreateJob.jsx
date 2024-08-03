@@ -223,7 +223,7 @@ const CreateJob = () => {
             <h3 className="font-bold">Cash</h3>
             <div className="flex items-center p-2 border border-gray-300 rounded-lg">
               <input
-                type="text"
+                type="number"
                 name="cash"
                 className="w-full outline-none"
                 onChange={formik.handleChange}
